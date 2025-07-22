@@ -4,47 +4,162 @@
   <meta charset="UTF-8">
   <title>智慧電視拼圖挑戰</title>
   <style>
-    body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #111; }
-    .grid { display: grid; grid-template-columns: repeat(4, 200px); grid-template-rows: repeat(4, 200px); gap: 2px; }
-    .grid img { width: 200px; height: 200px; cursor: pointer; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #111;
+      font-family: sans-serif;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .instruction {
+      max-width: 300px;
+      font-size: 20px;
+      line-height: 1.6;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 200px);
+      grid-template-rows: repeat(4, 200px);
+      gap: 2px;
+    }
+    .grid img {
+      width: 200px;
+      height: 200px;
+      cursor: pointer;
+    }
+    @media (max-width: 1000px) {
+      body {
+        flex-direction: column;
+        height: auto;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="grid" id="puzzle">
-    <img src="img/1.png" data-pos="1">
-    <img src="img/2.png" data-pos="2">
-    <img src="img/3.png" data-pos="3">
-    <img src="img/4.png" data-pos="4">
-    <img src="img/5.png" data-pos="5">
-    <img src="img/6.png" data-pos="6">
-    <img src="img/7.png" data-pos="7">
-    <img src="img/8.png" data-pos="8">
-    <img src="img/9.png" data-pos="9">
-    <img src="img/10.png" data-pos="10">
-    <img src="img/11.png" data-pos="11">
-    <img src="img/12.png" data-pos="12">
-    <img src="img/13.png" data-pos="13">
-    <img src="img/14.png" data-pos="14">
-    <img src="img/15.png" data-pos="15">
-    <img src="img/16.png" data-pos="16">
 
+  <!-- 背景音樂 -->
+  <audio id="bgm" src="music/beach_theme.mp3" loop></audio>
+
+  <div class="container">
+    <div class="instruction">
+      <h2>關卡說明</h2>
+      <p>任選兩片拼圖交換位置，完成拼圖！</p>
+    </div>
+
+    <div class="grid" id="puzzle"></div>
   </div>
+
   <script>
     const grid = document.getElementById('puzzle');
     let first = null;
+    const total = 16;
+
+    // 初始化拼圖：1~16 圖片隨機排序
+    const pieces = [];
+    for (let i = 1; i <= total; i++) {
+      const img = document.createElement('img');
+      img.src = `img/${i}.png`;
+      img.dataset.correct = `${i}.png`; // 正確圖片名稱
+      pieces.push(img);
+    }
+
+    shuffle(pieces);
+    pieces.forEach(img => grid.appendChild(img));
+
     grid.addEventListener('click', e => {
+      playBGMOnce(); // 播放背景音樂（點第一次才觸發）
+
       if (e.target.tagName !== 'IMG') return;
+
       if (!first) {
         first = e.target;
         first.style.border = '2px solid yellow';
       } else {
         const second = e.target;
-        // 交換 src
         [first.src, second.src] = [second.src, first.src];
         first.style.border = 'none';
         first = null;
+
+        if (isPuzzleComplete()) {
+          fadeOutBGM();
+          playCompleteSound();
+          showNextHint();
+        }
       }
     });
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function isPuzzleComplete() {
+      const imgs = grid.querySelectorAll('img');
+      return Array.from(imgs).every((img, i) => {
+        const filename = img.src.split('/').pop();
+        return filename === `${i + 1}.png`;
+      });
+    }
+
+    function playCompleteSound() {
+      const audio = new Audio('music/complete.mp3');
+      audio.play();
+    }
+
+    function showNextHint() {
+      const hint = document.createElement('div');
+      hint.innerHTML = `
+        <div style="position:fixed; top:30%; left:50%; transform:translate(-50%, -50%);
+                    background:#fff; padding:20px; border-radius:12px; text-align:center;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index:1000;">
+          <h2>🎉 拼圖完成！</h2>
+          <p>提示：去窗邊找找看...</p>
+          <a href="level_2.html" style="font-size: 20px;">➡️ 前往下一關</a>
+        </div>`;
+      document.body.appendChild(hint);
+    }
+
+    // ✅ 背景音樂播放
+    let bgmStarted = false;
+    function playBGMOnce() {
+      if (bgmStarted) return;
+      const bgm = document.getElementById('bgm');
+      bgm.volume = 1.0;
+      bgm.play().catch(err => console.log("背景音樂播放失敗：", err));
+      bgmStarted = true;
+    }
+
+    // ✅ 背景音樂淡出函式
+    function fadeOutBGM() {
+      const bgm = document.getElementById('bgm');
+      const fadeInterval = setInterval(() => {
+        if (bgm.volume > 0.05) {
+          bgm.volume -= 0.05;
+        } else {
+          bgm.volume = 0;
+          bgm.pause();
+          clearInterval(fadeInterval);
+        }
+      }, 100);
+    }
   </script>
 </body>
 </html>
