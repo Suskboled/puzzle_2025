@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>智慧電視拼圖挑戰</title>
+  <style>
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; background: #111; }
+    .grid { display: grid; grid-template-columns: repeat(4, 200px); grid-template-rows: repeat(4, 200px); gap: 2px; }
+    .grid img { width: 200px; height: 200px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="grid" id="puzzle">
+    <img src="img/1.png" data-pos="1">
+    <img src="img/2.png" data-pos="2">
+    <img src="img/3.png" data-pos="3">
+    <img src="img/4.png" data-pos="4">
+    <img src="img/5.png" data-pos="5">
+    <img src="img/6.png" data-pos="6">
+    <img src="img/7.png" data-pos="7">
+    <img src="img/8.png" data-pos="8">
+    <img src="img/9.png" data-pos="9">
+    <img src="img/10.png" data-pos="10">
+    <img src="img/11.png" data-pos="11">
+    <img src="img/12.png" data-pos="12">
+    <img src="img/13.png" data-pos="13">
+    <img src="img/14.png" data-pos="14">
+    <img src="img/15.png" data-pos="15">
+    <img src="img/16.png" data-pos="16">
+
+  </div>
+  <script>
+    const grid = document.getElementById('puzzle');
+    let first = null;
+    grid.addEventListener('click', e => {
+      if (e.target.tagName !== 'IMG') return;
+      if (!first) {
+        first = e.target;
+        first.style.border = '2px solid yellow';
+      } else {
+        const second = e.target;
+        // 交換 src
+        [first.src, second.src] = [second.src, first.src];
+        first.style.border = 'none';
+        first = null;
+      }
+    });
+  </script>
+</body>
+</html>
