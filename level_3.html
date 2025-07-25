@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>智慧電視快問快答 - 第三關</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+      color: #fff;
+      font-family: sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 20px;
+      flex-direction: column;
+      text-align: center;
+    }
+    img {
+      max-width: 120vw;
+      max-height: 90vh;
+      display: none;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+    .fade-in {
+      opacity: 1 !important;
+    }
+    .question-box {
+      display: none;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.6s ease;
+    }
+    .question-box.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    .keypad button {
+      font-size: 24px;
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #444;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+    .keypad button:active {
+      transform: scale(0.95);
+    }
+    .keypad-display {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    #startScreen {
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+    }
+    #startScreen button {
+      margin-top: 20px;
+      font-size: 24px;
+      padding: 10px 30px;
+      border-radius: 8px;
+      background: #08f;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <audio id="bgm" src="music/hurry.mp3" loop></audio>
+  <audio id="success" src="music/success.mp3"></audio>
+
+  <div id="startScreen">
+    <h2>第三關：快問快答</h2>
+    <p>每一題會顯示一張照片 5 秒，請仔細觀察。</p>
+    <p>之後將出現與照片相關的問題，請輸入正確的數字答案。</p>
+    <button onclick="startQuiz()">開始</button>
+  </div>
+
+  <div id="photoContainer">
+    <img id="photo" src="" alt="問題圖片">
+</div>
+<div id="multiPhotoContainer" style="display:none; gap: 10px; flex-wrap: wrap; justify-content: center; align-items: flex-start;"></div>
+
+  <div class="question-box" id="questionBox">
+    <p id="question"></p>
+    <div class="keypad-display" id="answerDisplay"></div>
+    <div class="keypad" id="keypad"></div>
+    <button id="nextBtn" onclick="nextQuestion()" style="display:none; margin-top: 10px;">➡️ 下一題</button>
+  </div>
+
+  <script>
+    const photos = ["3-1.JPG","3-2.JPG","3-3.JPG","3-4.JPG","3-5.JPG"];
+    const questions = [
+      { q: "照片裡有幾隻眼睛？", ans: "8" },
+      { q: "照片裡有幾種動物？", ans: "6" },
+      { q: "誰跳得最高？", ans: "2", multi: ["3-3-1.JPG", "3-3-2.JPG", "3-3-3.JPG", "3-3-4.JPG"] },
+      { q: "紅色球有幾顆？", ans: "4" },
+      { q: "背景中有幾棵樹？", ans: "5" },
+    ];
+
+    let current = 0;
+let attempts = 0;
+    let input = "";
+    let confirmBtn;
+
+    const photo = document.getElementById('photo');
+    const questionBox = document.getElementById('questionBox');
+const multiPhotoContainer = document.getElementById('multiPhotoContainer');
+    const questionText = document.getElementById('question');
+    const answerDisplay = document.getElementById('answerDisplay');
+    const nextBtn = document.getElementById('nextBtn');
+    const startScreen = document.getElementById('startScreen');
+    const bgm = document.getElementById('bgm');
+
+    function startQuiz() {
+      startScreen.style.display = 'none';
+      bgm.play();
+      showPhoto();
+    }
+
+    function showPhoto() {
+      photo.classList.remove('fade-in');
+      photo.style.display = 'none';
+      multiPhotoContainer.innerHTML = "";
+      multiPhotoContainer.style.display = 'none';
+
+      const q = questions[current];
+      if (q.multi) {
+        multiPhotoContainer.style.display = 'flex';
+        q.multi.forEach((file, index) => {
+          const wrapper = document.createElement('div');
+          wrapper.style.display = 'flex';
+          wrapper.style.flexDirection = 'column';
+          wrapper.style.alignItems = 'center';
+
+          const img = document.createElement('img');
+          img.src = `img/level3/${file}`;
+          img.style.display = 'block';
+          img.style.opacity = '1';
+          img.style.maxWidth = '300px';
+          img.style.margin = '5px';
+          img.style.border = '2px solid #fff';
+
+          const label = document.createElement('div');
+          label.textContent = `${index + 1}`;
+          label.style.marginTop = '4px';
+          label.style.fontSize = '18px';
+
+          wrapper.appendChild(img);
+          wrapper.appendChild(label);
+          multiPhotoContainer.appendChild(wrapper);
+        });
+      } else {
+        photo.src = `img/level3/${photos[current]}`;
+        photo.style.display = 'block';
+        setTimeout(() => {
+          photo.classList.add('fade-in');
+        }, 50);
+      }
+
+      questionBox.classList.remove('show');
+      questionBox.style.display = 'none';
+      nextBtn.style.display = 'none';
+
+      setTimeout(() => {
+        photo.style.display = 'none';
+        multiPhotoContainer.style.display = 'none';
+        showQuestion();
+      }, 5000);
+    }
+
+    function showQuestion() {
+      questionBox.style.display = 'block';
+      setTimeout(() => questionBox.classList.add('show'), 10);
+      questionText.textContent = questions[current].q;
+      answerDisplay.textContent = input;
+
+      if (!confirmBtn) {
+        confirmBtn = document.createElement('button');
+        confirmBtn.textContent = '確定';
+        confirmBtn.style.marginTop = '10px';
+        confirmBtn.onclick = checkAnswer;
+        questionBox.appendChild(confirmBtn);
+      }
+      confirmBtn.style.display = 'inline-block';
+      nextBtn.style.display = 'none';
+    }
+      
+
+    function inputAnswer(n) {
+      input += n;
+      answerDisplay.textContent = input;
+    }
+
+    function resetAnswer() {
+      input = "";
+      answerDisplay.textContent = "";
+    }
+
+    function nextQuestion() {
+      current++;
+      input = "";
+      if (current >= questions.length) {
+        alert("🎉 全部答對，進入下一關！");
+        window.location.href = "https://suskboled.github.io/level_4.html";
+        return;
+      }
+      showPhoto();
+    }
+
+    // 建立數字鍵盤
+    const keypad = document.getElementById('keypad');
+    const digits = [0,1,2,3,4,5,6,7,8,9];
+    digits.forEach(n => {
+      const btn = document.createElement('button');
+      btn.textContent = n;
+      btn.onclick = () => inputAnswer(n);
+      keypad.appendChild(btn);
+    });
+    const resetBtn = document.createElement('button');
+    resetBtn.textContent = '重設';
+    resetBtn.onclick = resetAnswer;
+    keypad.appendChild(resetBtn);
+  function checkAnswer() {
+  if (current === 2 && attempts === 0) {
+    // 第一次回答第三題，一律視為錯誤並更換圖片
+    questions[2].multi = ["3-3-1.JPG", "3-3-2.png", "3-3-3.JPG", "3-3-4.JPG"];
+    attempts++;
+    input = "";
+    answerDisplay.textContent = "";
+    questionBox.style.display = 'none';
+    showPhoto();
+    return;
+  }
+
+  if (input === questions[current].ans) {
+    document.getElementById('success').play();
+    nextBtn.style.display = 'inline-block';
+    confirmBtn.style.display = 'none';
+    attempts = 0; // reset for next question
+  } else {
+    input = "";
+    answerDisplay.textContent = "";
+    questionBox.style.display = 'none';
+    showPhoto();
+  }
+} 
+
+    </script>
+</body>
+</html>

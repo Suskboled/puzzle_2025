@@ -20,7 +20,7 @@
       display: flex;
       flex-direction: row;
       gap: 40px;
-      align-items: center;
+      align-items: flex-start;
       flex-wrap: wrap;
     }
     .instruction {
@@ -43,6 +43,24 @@
       height: 200px;
       cursor: pointer;
     }
+    .keypad {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .keypad button {
+      font-size: 24px;
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #444;
+      color: #fff;
+      cursor: pointer;
+    }
+    .keypad-display {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
     @media (max-width: 1000px) {
       body {
         flex-direction: column;
@@ -52,30 +70,26 @@
   </style>
 </head>
 <body>
-
-  <!-- 背景音樂 -->
   <audio id="bgm" src="music/beach_theme.mp3" loop></audio>
-
+  <audio id="success-sound" src="music/success.mp3"></audio>
+  <audio id="unlock-bgm" src="music/unlock.mp3" loop></audio>
   <div class="container">
     <div class="instruction">
       <h2>關卡說明</h2>
       <p>任選兩片拼圖交換位置，完成拼圖！</p>
     </div>
-
     <div class="grid" id="puzzle"></div>
   </div>
-
   <script>
     const grid = document.getElementById('puzzle');
     let first = null;
     const total = 16;
 
-    // 初始化拼圖：1~16 圖片隨機排序
     const pieces = [];
     for (let i = 1; i <= total; i++) {
       const img = document.createElement('img');
-      img.src = `img/${i}.png`;
-      img.dataset.correct = `${i}.png`; // 正確圖片名稱
+      img.src = `img/level1/${i}.png`;
+      img.dataset.correct = `${i}.png`;
       pieces.push(img);
     }
 
@@ -83,10 +97,8 @@
     pieces.forEach(img => grid.appendChild(img));
 
     grid.addEventListener('click', e => {
-      playBGMOnce(); // 播放背景音樂（點第一次才觸發）
-
+      playBGMOnce();
       if (e.target.tagName !== 'IMG') return;
-
       if (!first) {
         first = e.target;
         first.style.border = '2px solid yellow';
@@ -95,7 +107,6 @@
         [first.src, second.src] = [second.src, first.src];
         first.style.border = 'none';
         first = null;
-
         if (isPuzzleComplete()) {
           fadeOutBGM();
           playCompleteSound();
@@ -124,20 +135,48 @@
       audio.play();
     }
 
+    function playSuccessSound() {
+      const audio = document.getElementById('success-sound');
+      audio.play();
+    }
+
     function showNextHint() {
       const hint = document.createElement('div');
       hint.innerHTML = `
-        <div style="position:fixed; top:30%; left:50%; transform:translate(-50%, -50%);
+        <div style="position:fixed; top:20%; left:50%; transform:translate(-50%, 0);
                     background:#fff; padding:20px; border-radius:12px; text-align:center;
-                    box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index:1000;">
+                    box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index:1000; color:#000;">
           <h2>🎉 拼圖完成！</h2>
-          <p>提示：去窗邊找找看...</p>
-          <a href="level_2.html" style="font-size: 20px;">➡️ 前往下一關</a>
+          <p>提示：目標在家裡找到密碼卡</p>
+          <div class="keypad-display" id="display"></div>
+          <div class="keypad">
+            ${[0,1,2,3,4,5,6,7,8,9].map(n => `<button onclick="enterDigit(${n})">${n}</button>`).join('')}
+            <button onclick="resetInput()">重設</button>
+          </div>
+          <div id="next-link" style="margin-top: 15px;"></div>
         </div>`;
       document.body.appendChild(hint);
+      document.getElementById('unlock-bgm').play();
     }
 
-    // ✅ 背景音樂播放
+    let input = '';
+    const correctPassword = '429';
+
+    function enterDigit(digit) {
+      input += digit;
+      document.getElementById('display').textContent = input;
+      if (input === correctPassword) {
+        playSuccessSound();
+        document.getElementById('next-link').innerHTML = '<a href="https://suskboled.github.io/level_2.html" style="font-size: 20px;">✅ 前往下一關</a>';
+      }
+    }
+
+    function resetInput() {
+      input = '';
+      document.getElementById('display').textContent = '';
+      document.getElementById('next-link').innerHTML = '';
+    }
+
     let bgmStarted = false;
     function playBGMOnce() {
       if (bgmStarted) return;
@@ -147,7 +186,6 @@
       bgmStarted = true;
     }
 
-    // ✅ 背景音樂淡出函式
     function fadeOutBGM() {
       const bgm = document.getElementById('bgm');
       const fadeInterval = setInterval(() => {

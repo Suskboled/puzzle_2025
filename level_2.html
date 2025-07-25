@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>智慧電視拼圖挑戰 第二關</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #111;
+      font-family: sans-serif;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+    .instruction {
+      max-width: 300px;
+      font-size: 20px;
+      line-height: 1.6;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(255,255,255,0.1);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 200px);
+      grid-template-rows: repeat(2, auto);
+      gap: 10px;
+    }
+    .grid-item {
+      position: relative;
+      width: 200px;
+      height: auto;
+      background: #000;
+    }
+    .grid-item img {
+      max-width: 100%;
+      max-height: 100%;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      cursor: pointer;
+      display: block;
+      margin: 0 auto;
+    }
+    .grid-item .label {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 4px 8px;
+      font-size: 16px;
+      border-radius: 5px;
+      pointer-events: none;
+    }
+    .keypad {
+      margin-top: 20px;
+      text-align: center;
+    }
+    .keypad button {
+      font-size: 24px;
+      margin: 5px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background-color: #444;
+      color: #fff;
+      cursor: pointer;
+    }
+    .keypad-display {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    @media (max-width: 1000px) {
+      body {
+        flex-direction: column;
+        height: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <audio id="bgm" src="music/vacation.mp3" loop></audio>
+  <audio id="success-sound" src="music/unlock.mp3"></audio>
+  <audio id="unlock-bgm" src="music/unlock.mp3" loop></audio>
+  <div class="container">
+    <div class="instruction">
+      <h2>關卡說明</h2>
+      <p>請根據照片拍攝時間，由遠到近排列正確順序</p>
+    </div>
+    <div class="grid" id="puzzle"></div>
+  </div>
+  <script>
+    const grid = document.getElementById('puzzle');
+    let first = null;
+    const imageFiles = ['2-1.JPG','2-2.JPG','2-3.JPG','2-4.JPG','2-5.JPG','2-6.JPG'];
+
+    function createEmptyTile(index) {
+      const div = document.createElement('div');
+      div.classList.add('grid-item');
+
+      const img = document.createElement('img');
+      img.src = '';
+      img.dataset.slot = index;
+
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = index + 1;
+
+      div.appendChild(img);
+      div.appendChild(label);
+      return div;
+    }
+
+    // 建立固定順序的空白格子並加上標籤
+    const gridSlots = [];
+    for (let i = 0; i < imageFiles.length; i++) {
+      const tile = createEmptyTile(i);
+      grid.appendChild(tile);
+      gridSlots.push(tile);
+    }
+
+    // 打亂圖片順序並放入空格中
+    const shuffledImages = [...imageFiles];
+    shuffle(shuffledImages);
+    shuffledImages.forEach((filename, i) => {
+      const img = gridSlots[i].querySelector('img');
+      img.src = `img/level2/${filename}`;
+      img.dataset.correct = filename;
+    });
+
+    grid.addEventListener('click', e => {
+      playBGMOnce();
+      if (e.target.tagName !== 'IMG') return;
+      const current = e.target.closest('.grid-item');
+      if (!first) {
+        first = current;
+        first.querySelector('img').style.border = '2px solid yellow';
+      } else {
+        const second = current;
+        const firstImg = first.querySelector('img');
+        const secondImg = second.querySelector('img');
+        [firstImg.src, secondImg.src] = [secondImg.src, firstImg.src];
+        [firstImg.dataset.correct, secondImg.dataset.correct] = [secondImg.dataset.correct, firstImg.dataset.correct];
+        firstImg.style.border = 'none';
+        first = null;
+        if (isPuzzleComplete()) {
+          fadeOutBGM();
+          playCompleteSound();
+          showNextHint();
+        }
+      }
+    });
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    function isPuzzleComplete() {
+      const imgs = grid.querySelectorAll('img');
+      return Array.from(imgs).every((img, i) => {
+        const filename = img.src.split('/').pop();
+        return filename === imageFiles[i];
+      });
+    }
+
+    function playCompleteSound() {
+      const audio = new Audio('music/complete.mp3');
+      audio.play();
+    }
+
+    function playSuccessSound() {
+      const audio = new Audio('music/success.mp3');
+      audio.play();
+    }
+
+    function showNextHint() {
+      const hint = document.createElement('div');
+      hint.innerHTML = `
+        <div style="position:fixed; top:20%; left:50%; transform:translate(-50%, 0);
+                    background:#fff; padding:20px; border-radius:12px; text-align:center;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.5); z-index:1000; color:#000;">
+          <h2>🎉 排列完成！</h2>
+          <p>提示：找出地圖中紅色標記的座標</p>
+          <div class="keypad-display" id="display"></div>
+          <div class="keypad">
+            ${[0,1,2,3,4,5,6,7,8,9].map(n => `<button onclick="enterDigit(${n})">${n}</button>`).join('')}
+            <button onclick="resetInput()">重設</button>
+          </div>
+          <div id="next-link" style="margin-top: 15px;"></div>
+        </div>`;
+      document.body.appendChild(hint);
+      document.getElementById('unlock-bgm').play();
+    }
+
+    let input = '';
+    const correctPassword = '123';
+
+    function enterDigit(digit) {
+      input += digit;
+      document.getElementById('display').textContent = input;
+      if (input === correctPassword) {
+        playSuccessSound();
+        document.getElementById('next-link').innerHTML = '<a href="https://suskboled.github.io/level_3.html" style="font-size: 20px;">✅ 前往下一關</a>';
+      }
+    }
+
+    function resetInput() {
+      input = '';
+      document.getElementById('display').textContent = '';
+      document.getElementById('next-link').innerHTML = '';
+    }
+
+    let bgmStarted = false;
+    function playBGMOnce() {
+      if (bgmStarted) return;
+      const bgm = document.getElementById('bgm');
+      bgm.volume = 1.0;
+      bgm.loop = true;
+      bgm.play().catch(err => console.log("背景音樂播放失敗：", err));
+      bgmStarted = true;
+    }
+
+    function fadeOutBGM() {
+      const bgm = document.getElementById('bgm');
+      const fadeInterval = setInterval(() => {
+        if (bgm.volume > 0.05) {
+          bgm.volume -= 0.05;
+        } else {
+          bgm.volume = 0;
+          bgm.pause();
+          clearInterval(fadeInterval);
+        }
+      }, 100);
+    }
+  </script>
+</body>
+</html>
